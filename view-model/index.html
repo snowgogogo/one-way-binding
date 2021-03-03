@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html>
+
+<head></head>
+
+<body>
+  <span>测试:</span><input type="text" id="testVal">
+  <script type="text/javascript">
+    var val = "";
+    var testEl = document.getElementById('testVal');
+    // 改变model数据
+    function setVal(e) {
+      val = e.target.value;
+      console.log('设置后val为: ' + val);
+    }
+    testEl.addEventListener('change', setVal);
+  </script>
+</body>
+
+</html>
