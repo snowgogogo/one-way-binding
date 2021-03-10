@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <style>
+    html {
+      font-size: 15px;
+    }
+
+    .tile {
+      color: #211f1f;
+    }
+
+    .tile>span {
+      color: red;
+    }
+  </style>
+</head>
+
+<body>
+  <script src="../dist/bundle.js"></script>
+  <div id="demo">
+    <div class="tile"><span>example1:</span> 数据改变绑定视图,可以在控制台通过demo.message='xxx'来测试.</div>
+    <div>{{message}}</div>
+    <hr>
+    <div class="tile"><span>example2:</span>添加一个input方便测试.</div>
+    <input type="text" id="testVal">
+    <div>{{message}}</div>
+  </div>
+  <script>
+    var demo = new ViewModel({
+      el: '#demo',
+      data: {message: 'hello world!'}
+    });
+    var testEl = document.getElementById('testVal');
+    // 改变model数据
+    function setVal(e) {
+      demo.message = e.target.value;
+    }
+    testEl.addEventListener('input', setVal);
+
+  </script>
+</body>
+
+</html>

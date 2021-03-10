@@ -1,5 +1,5 @@
 /*
- * Desc: DOM上内容和Object绑定
+ * Desc: 将 data 中的数据创建 binding 数据集合.
          定义binding类,类似java中Dao.
  */
 
@@ -10,15 +10,17 @@ export function Binding(compiler, key) {
   this.value = undefined;
   this.compiler = compiler;
   this.key = key;
-  this.subs = [];
-  this.deps = [];
-  this.root = key.indexOf('.') === -1;
-  this.unbound = false;
+  // 指令集合
+  this.dirs = [];
 }
 
 let BindingProto = Binding.prototype;
 
 BindingProto.update = function(value) {
-  // 当没有设定值时,直接更新.
   this.value = value;
+  // 更新 binding 的同时,也需要更新对应指令的数据,也就是 Dom 中的值.
+  if (this.dirs.length > 0) {
+    for (var i = 0; i < this.dirs.length; i++)
+      this.dirs[i].$update(value);
+  }
 }

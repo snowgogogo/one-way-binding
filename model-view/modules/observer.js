@@ -1,90 +1,54 @@
+/*
+ * Desc: 劫持所有 data 数据,通过 Object.defineProperty 来实现.
+ *       使 data 数据都变为被观察的状态.
+ */
+
+
 import {Emitter} from './emitter';
 
 let def = Object.defineProperty;
 
-function observe(obj, rawPath, observer) {
-  let path = rawPath ? rawPath + '.' : '';
-  let alreadyConverted = convert(obj);
+function observe(obj, observer) {
+  convert(obj);
   let emitter = obj.__emitter__;
-  observer.proxies = observer.proxies || {};
-  let proxies = observer.proxies[path] = {
-    get: function(key) {
-      observer.emit('get', path + key);
-    },
+  // 这里定义临时变量,方便取消绑定时获取fun.
+  observer.proxies = {};
+  let proxies = observer.proxies = {
     set: function(key, val) {
       if (key) {
-        observer.emit('set', path + key, val);
+        observer.emit('set', key, val);
       }
     }
   };
-
-  emitter.on('get', proxies.get);
   emitter.on('set', proxies.set);
 
-  if (alreadyConverted) {
-    emitSet(obj);
-  } else {
-    watch(obj);
-  }
+  /**
+   * 关键点: 对data中所有数据通过Object.defineProperty
+   * 设置get/set 方法.
+   * 将所有数据都设置为被观察状态.
+   */
+  watchObject(obj);
+
 }
 
 function convert(obj) {
-  if (obj.__emitter__) {
-    return true;
-  }
+  // 这里定义一个新的emitter
   let emitter = new Emitter();
-  // 定义一个emitter
-  def(obj, '__emitter__', emitter);
+  // 对整个 data 进行属性添加.
+  def(obj, '__emitter__', {
+    value: emitter,
+    configurable: true,
+    enumerable: false
+  });
   emitter.values = Object.create(null);
-  emitter.owners = [];
-  return false;
-}
-
-/**
- *  When a value that is already converted is
- *  observed again by another observer, we can skip
- *  the watch conversion and simply emit set event for
- *  all of its properties.
- */
-function emitSet(obj) {
-  var emitter = obj && obj.__emitter__
-  if (!emitter) return
-  if (isArray(obj)) {
-    emitter.emit('set', 'length', obj.length)
-  } else {
-    var key, val
-    for (key in obj) {
-      val = obj[key]
-      emitter.emit('set', key, val)
-      emitSet(val)
-    }
-  }
-}
-
-/**
- *  Watch target based on its type
- */
-function watch(obj) {
-  watchObject(obj)
 }
 
 /**
  *  Watch an Object, recursive.
  */
 function watchObject(obj) {
-  augment(obj, ObjProxy)
   for (var key in obj) {
     convertKey(obj, key)
-  }
-}
-
-/**
- *  Augment target objects with modified
- *  methods
- */
-function augment(target, src) {
-  for (var key in src) {
-    def(target, key, src[key])
   }
 }
 
@@ -93,69 +57,34 @@ function augment(target, src) {
  *  so it emits get/set events.
  *  Then watch the value itself.
  */
-function convertKey(obj, key, propagate) {
-  var keyPrefix = key.charAt(0)
-  if (keyPrefix === '$' || keyPrefix === '_') {
-    return
-  }
+function convertKey(obj, key) {
   // emit set on bind
   // this means when an object is observed it will emit
   // a first batch of set events.
-  var emitter = obj.__emitter__,
-    values = emitter.values
+  let emitter = obj.__emitter__;
+  let values = emitter.values;
 
-  init(obj[key], propagate)
+  // 编译的时,进行数据初始化渲染.
+  init(obj[key]);
 
-  // 使用 Object.defineProperty() 定义 get/set 方法,可以监听所有数据
-  oDef(obj, key, {
+  def(obj, key, {
     enumerable: true,
     configurable: true,
     get: function() {
       var value = values[key]
-      // only emit get on tip values
-      if (pub.shouldGet) {
-        emitter.emit('get', key)
-      }
       return value
     },
     set: function(newVal) {
-      var oldVal = values[key]
-      unobserve(oldVal, key, emitter)
-      copyPaths(newVal, oldVal)
-      // an immediate property should notify its parent
-      // to emit set for itself too
-      init(newVal, true)
+      // 改变值时,对数据进行渲染.
+      init(newVal)
     }
   })
 
-  function init(val, propagate) {
-    values[key] = val
-    emitter.emit('set', key, val, propagate)
-    if (isArray(val)) {
-      emitter.emit('set', key + '.length', val.length, propagate)
-    }
-    observe(val, key, emitter)
+  function init(val) {
+    // 给emitter的value赋值.
+    values[key] = val;
+    emitter.emit('set', key, val);
   }
 }
 
-/**
- *  Cancel observation, turn off the listeners.
- */
-function unobserve(obj, path, observer) {
-
-  if (!obj || !obj.__emitter__) return
-
-  path = path ? path + '.' : ''
-  var proxies = observer.proxies[path]
-  if (!proxies) return
-
-  // turn off listeners
-  obj.__emitter__
-    .off('get', proxies.get)
-    .off('set', proxies.set)
-    .off('mutate', proxies.mutate)
-
-  // remove reference
-  observer.proxies[path] = null
-}
-export {observe};
+export default {observe};

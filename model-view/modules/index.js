@@ -3,7 +3,8 @@
  */
 import {Compiler} from './compiler';
 
-export function ViewModel(options) {
+window.ViewModel = function(options) {
   console.log('create new VM, options: ' + JSON.stringify(options));
   new Compiler(this, options);
 }
+

@@ -44,11 +44,11 @@ emitterProto.off = function(event, fn) {
   }
   return this;
 }
-emitterProto.emit = function(event, data) {
+emitterProto.emit = function(event, a, b, c) {
   var callbacks = this._cbs[event];
   if (callbacks) {
     for (var i = 0, len = callbacks.length; i < len; i++) {
-      callbacks[i].call(this._ctx, data);
+      callbacks[i].call(this._ctx, a, b, c);
     }
   }
   return this;

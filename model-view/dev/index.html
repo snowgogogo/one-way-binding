@@ -5,8 +5,14 @@
 
 <body>
   <script src="./dev.js"></script>
+  <div id="demo">
+    <div>{{message}}</div>
+  </div>
   <script>
-    var demo = new ViewModel();
+    var demo = new ViewModel({
+      el: '#demo',
+      data: {message: 'hello world!'}
+    });
   </script>
 </body>
 
